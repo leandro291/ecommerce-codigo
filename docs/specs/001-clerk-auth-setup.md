@@ -1,7 +1,7 @@
 ---
 id: 001
 title: Setup de Clerk vía CLI oficial
-status: in-progress
+status: in-review
 module: auth
 scope: both
 created: 2026-08-26
@@ -154,53 +154,53 @@ Capas no tocadas: `src/server/**`, `src/modules/**`, `src/lib/**`.
 **T2, T3 y T17 son interactivos: el developer ejecuta el comando y se detiene hasta
 que el humano confirma.** No los simule ni los dé por hechos.
 
-- [ ] **T1** — Crear repo git y commit base para poder auditar lo que escriba el CLI ·
+- [x] **T1** — Crear repo git y commit base para poder auditar lo que escriba el CLI ·
       comando: `git init && git add -A && git commit -m "chore: base antes de clerk init"` ·
       verificación: `git status --short` sale vacío
-- [ ] **T2** — Instalar o actualizar el Clerk CLI: si `command -v clerk` responde,
+- [x] **T2** — Instalar o actualizar el Clerk CLI: si `command -v clerk` responde,
       `clerk update --yes`; si no, `npm install -g clerk` · verificación: `clerk --version`
-- [ ] **T3** — `clerk auth login` · **PAUSA: el humano completa el login en el
+- [x] **T3** — `clerk auth login` · **PAUSA: el humano completa el login en el
       navegador** · verificación: el CLI confirma sesión activa
-- [ ] **T4** — `clerk init --app app_3ITtYw4T6anWmWyaAdmytpw5nWt` (sin `--framework`,
+- [x] **T4** — `clerk init --app app_3ITtYw4T6anWmWyaAdmytpw5nWt` (sin `--framework`,
       sin `--pm`) · verificación: `grep -c '^NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="\?pk_' .env.local`
       y `grep -c '^CLERK_SECRET_KEY="\?sk_' .env.local` devuelven `1` cada uno.
       **Nunca imprimir el contenido de `.env.local`.**
-- [ ] **T5** — Revisar `git diff` de T4 y revertir todo cambio que contradiga
+- [x] **T5** — Revisar `git diff` de T4 y revertir todo cambio que contradiga
       `docs/SETUP.md`: no duplicar el archivo de borde (`middleware.ts` vs
       `src/proxy.ts`), no perder `QueryProvider` ni las fuentes en `layout.tsx`, no
       perder las reglas de rutas públicas/admin de `proxy.ts` · verificación:
       `npm run typecheck` y un `git diff` que solo contenga cambios justificados
-- [ ] **T6** — Añadir `"/__clerk/:path*"` al `config.matcher` de `src/proxy.ts`,
+- [x] **T6** — Añadir `"/__clerk/:path*"` al `config.matcher` de `src/proxy.ts`,
       inmediatamente después de `"/(api|trpc)(.*)"` · archivo: `src/proxy.ts` ·
       verificación: `grep -c '__clerk' src/proxy.ts` devuelve `1` y `npm run typecheck`
-- [ ] **T7** — Mover `<ClerkProvider>` dentro de `<body>`, envolviendo a
+- [x] **T7** — Mover `<ClerkProvider>` dentro de `<body>`, envolviendo a
       `QueryProvider` · archivo: `src/app/layout.tsx` · verificación: `npm run typecheck`
-- [ ] **T8** — `npm install @clerk/ui` · verificación: `npm ls @clerk/ui`
-- [ ] **T9** — Aplicar el tema: `import { shadcn } from "@clerk/ui/themes"` y
+- [x] **T8** — `npm install @clerk/ui` · verificación: `npm ls @clerk/ui`
+- [x] **T9** — Aplicar el tema: `import { shadcn } from "@clerk/ui/themes"` y
       `<ClerkProvider appearance={{ theme: shadcn }}>` · archivo: `src/app/layout.tsx` ·
       verificación: `npm run typecheck`
-- [ ] **T10** — Añadir `@import "@clerk/ui/themes/shadcn.css";` junto a los demás
+- [x] **T10** — Añadir `@import "@clerk/ui/themes/shadcn.css";` junto a los demás
       `@import` del inicio · archivo: `src/app/globals.css` · verificación: `npm run build`
-- [ ] **T11** — Página de sign-in con `<SignIn />` · archivo:
+- [x] **T11** — Página de sign-in con `<SignIn />` · archivo:
       `src/app/(auth)/sign-in/[[...sign-in]]/page.tsx` (eliminar el `.gitkeep` del
       directorio) · verificación: `npm run typecheck`
-- [ ] **T12** — Página de sign-up con `<SignUp />` · archivo:
+- [x] **T12** — Página de sign-up con `<SignUp />` · archivo:
       `src/app/(auth)/sign-up/[[...sign-up]]/page.tsx` (eliminar el `.gitkeep`) ·
       verificación: `npm run typecheck`
-- [ ] **T13** — Header del storefront: Server Component con el nombre de la tienda y,
+- [x] **T13** — Header del storefront: Server Component con el nombre de la tienda y,
       a la derecha, `<Show when="signed-out">` con `SignInButton` + `SignUpButton`
       (`mode="modal"`) y `<Show when="signed-in">` con `UserButton`. Sin `"use client"` ·
       archivo: `src/components/shared/header.tsx` · verificación: `npm run typecheck`
-- [ ] **T14** — Layout del storefront que renderiza `<Header />` sobre `{children}` ·
+- [x] **T14** — Layout del storefront que renderiza `<Header />` sobre `{children}` ·
       archivo: `src/app/(storefront)/layout.tsx` · verificación: `npm run typecheck`
-- [ ] **T15** — Mover `src/app/page.tsx` a `src/app/(storefront)/page.tsx` sin cambiar
+- [x] **T15** — Mover `src/app/page.tsx` a `src/app/(storefront)/page.tsx` sin cambiar
       su contenido · verificación: `npm run build` y `/` sigue resolviendo
-- [ ] **T16** — `clerk doctor` · verificación: salida sin errores; si reporta algo,
+- [x] **T16** — `clerk doctor` · verificación: salida sin errores; si reporta algo,
       corregirlo antes de continuar
 - [ ] **T17** — `npm run dev` y probar el flujo completo: registro, cierre de sesión,
       inicio de sesión, y `/checkout` redirigiendo a sign-in · **PAUSA: lo valida el
       humano en el navegador** · verificación: AC5 a AC8
-- [ ] **T18** — Cierre: `npm run typecheck && npm run lint && npm run build` ·
+- [x] **T18** — Cierre: `npm run typecheck && npm run lint && npm run build` ·
       verificación: los tres en verde
 
 ## 10. Riesgos y consideraciones
