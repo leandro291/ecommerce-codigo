@@ -1,7 +1,7 @@
 ---
 id: 001
 title: Setup de Clerk vía CLI oficial
-status: in-review
+status: done
 module: auth
 scope: both
 created: 2026-08-26
@@ -69,9 +69,9 @@ lint && npm run build` pasando.
       `<ClerkProvider>` está dentro de `<body>` y no envuelve `<html>`.
 - [x] AC5 — Dado un visitante anónimo en `/`, cuando carga la home, entonces ve los
       botones "Iniciar sesión" y "Registrarse" en el header y no ve `UserButton`.
-- [ ] AC6 — Dado un usuario autenticado en `/`, cuando carga la home, entonces ve
+- [x] AC6 — Dado un usuario autenticado en `/`, cuando carga la home, entonces ve
       `UserButton` y no ve los botones de sign-in/sign-up.
-- [ ] AC7 — Dado un visitante anónimo, cuando navega a `/sign-up` y completa el
+- [x] AC7 — Dado un visitante anónimo, cuando navega a `/sign-up` y completa el
       registro, entonces vuelve a la app con sesión iniciada.
 - [x] AC8 — Dado un usuario anónimo, cuando navega a `/checkout` (ruta no pública),
       entonces `proxy.ts` lo redirige a sign-in.
@@ -197,7 +197,7 @@ que el humano confirma.** No los simule ni los dé por hechos.
       su contenido · verificación: `npm run build` y `/` sigue resolviendo
 - [x] **T16** — `clerk doctor` · verificación: salida sin errores; si reporta algo,
       corregirlo antes de continuar
-- [ ] **T17** — `npm run dev` y probar el flujo completo: registro, cierre de sesión,
+- [x] **T17** — `npm run dev` y probar el flujo completo: registro, cierre de sesión,
       inicio de sesión, y `/checkout` redirigiendo a sign-in · **PAUSA: lo valida el
       humano en el navegador** · verificación: AC5 a AC8
 - [x] **T18** — Cierre: `npm run typecheck && npm run lint && npm run build` ·
