@@ -56,29 +56,29 @@ lint && npm run build` pasando.
 
 ## 4. Criterios de aceptación
 
-- [ ] AC1 — Dado un terminal limpio, cuando se ejecuta `clerk --version`, entonces
+- [x] AC1 — Dado un terminal limpio, cuando se ejecuta `clerk --version`, entonces
       imprime una versión sin error de comando no encontrado.
-- [ ] AC2 — Dado el CLI autenticado, cuando se ejecuta `clerk init --app
+- [x] AC2 — Dado el CLI autenticado, cuando se ejecuta `clerk init --app
       app_3ITtYw4T6anWmWyaAdmytpw5nWt`, entonces `.env.local` queda con
       `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` empezando en `pk_` y `CLERK_SECRET_KEY`
       empezando en `sk_`, verificado sin imprimir el valor.
-- [ ] AC3 — Dado `src/proxy.ts`, cuando se inspecciona `config.matcher`, entonces
+- [x] AC3 — Dado `src/proxy.ts`, cuando se inspecciona `config.matcher`, entonces
       contiene `'/__clerk/:path*'` exactamente una vez, inmediatamente después de
       `'/(api|trpc)(.*)'`.
-- [ ] AC4 — Dado `src/app/layout.tsx`, cuando se lee el árbol JSX, entonces
+- [x] AC4 — Dado `src/app/layout.tsx`, cuando se lee el árbol JSX, entonces
       `<ClerkProvider>` está dentro de `<body>` y no envuelve `<html>`.
-- [ ] AC5 — Dado un visitante anónimo en `/`, cuando carga la home, entonces ve los
+- [x] AC5 — Dado un visitante anónimo en `/`, cuando carga la home, entonces ve los
       botones "Iniciar sesión" y "Registrarse" en el header y no ve `UserButton`.
 - [ ] AC6 — Dado un usuario autenticado en `/`, cuando carga la home, entonces ve
       `UserButton` y no ve los botones de sign-in/sign-up.
 - [ ] AC7 — Dado un visitante anónimo, cuando navega a `/sign-up` y completa el
       registro, entonces vuelve a la app con sesión iniciada.
-- [ ] AC8 — Dado un usuario anónimo, cuando navega a `/checkout` (ruta no pública),
+- [x] AC8 — Dado un usuario anónimo, cuando navega a `/checkout` (ruta no pública),
       entonces `proxy.ts` lo redirige a sign-in.
-- [ ] AC9 — Cuando se ejecuta `clerk doctor`, entonces no reporta errores.
-- [ ] AC10 — Cuando se ejecuta `npm run typecheck && npm run lint && npm run build`,
+- [x] AC9 — Cuando se ejecuta `clerk doctor`, entonces no reporta errores.
+- [x] AC10 — Cuando se ejecuta `npm run typecheck && npm run lint && npm run build`,
       entonces los tres terminan en verde.
-- [ ] AC11 — Dado el código fuente completo, cuando se busca `CLERK_SECRET_KEY`,
+- [x] AC11 — Dado el código fuente completo, cuando se busca `CLERK_SECRET_KEY`,
       entonces no aparece en ningún archivo bajo `src/` (solo en `.env.local`, que
       está en `.gitignore`).
 
@@ -242,3 +242,10 @@ que el humano confirma.** No los simule ni los dé por hechos.
   de auth. Navegación, buscador, carrito y footer llegan con sus módulos.
 - **`(auth)/layout.tsx`.** No se crea; las páginas de Clerk se centran solas. Se
   añade si el diseño de esas pantallas lo pide.
+- **Matcher del proxy por extensión (hallazgo review).** El primer matcher de
+  `src/proxy.ts` excluye rutas por extensión (`.xlsx`, `.zip`, …). El spec de RBAC
+  debe fijar que toda descarga de admin se sirve bajo `/api/admin/` (cubierta por el
+  segundo matcher), nunca como `/admin/export.xlsx`, que saltaría el borde.
+- **Webhook de Clerk sin firma (hallazgo review).** `/api/webhooks(.*)` es público por
+  diseño y hoy no tiene handler. El spec de webhooks debe verificar la firma svix
+  antes de tocar datos: público + sin verificar = endpoint de escritura anónimo.
