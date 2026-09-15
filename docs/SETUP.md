@@ -97,7 +97,8 @@ las claves vacías.
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/server/db/seed.ts"
+    "db:seed": "tsx src/server/db/seed.ts",
+    "test": "node --test"
   }
 }
 ```
@@ -168,6 +169,8 @@ solo enruta y compone; la lógica vive en `modules/` (cliente) y `server/` (dato
     │       ├── schemas/         Zod: entrada/salida del dominio
     │       ├── store/           Zustand, solo si el dominio tiene estado UI global
     │       ├── types/           tipos derivados del schema Drizzle
+    │       ├── lib/             solo si el dominio tiene lógica pura propia (ver §7)
+    │       │   └── __tests__/   pruebas unitarias de ese `lib/`
     │       └── constants.ts
     │
     ├── server/                  SOLO servidor — nunca importar desde cliente
@@ -190,7 +193,8 @@ solo enruta y compone; la lógica vive en `modules/` (cliente) y `server/` (dato
     │   ├── auth.ts              helpers de Clerk: requireAuth, requireAdmin
     │   ├── permissions.ts       PERMISSIONS (códigos), can(), requirePermission()
     │   ├── audit.ts             logAudit() — escribe en audit_logs dentro de la tx
-    │   └── constants.ts
+    │   ├── constants.ts
+    │   └── __tests__/           pruebas unitarias de las funciones puras de `lib/` (ver §7)
     │
     ├── hooks/                   hooks transversales (useDebounce, useMediaQuery)
     ├── types/                   tipos globales compartidos
@@ -209,6 +213,7 @@ solo enruta y compone; la lógica vive en `modules/` (cliente) y `server/` (dato
 | Schema Drizzle | singular | `src/server/db/schema/product.ts` |
 | Tabla en Postgres | snake_case plural | `products`, `order_items` |
 | Route Handler | `route.ts` | `app/api/products/route.ts` |
+| Prueba unitaria | `<archivo>.test.ts` | `money.test.ts` |
 
 ---
 
@@ -348,7 +353,58 @@ Acceso admin protegido en dos capas: `proxy.ts` (borde) y verificación por
 
 ---
 
-## 7. Checklist de arranque
+## 7. Testing unitario
+
+Solo se prueban **funciones puras**: sin I/O a BD/Clerk/Stripe, sin `axios`, sin
+UI ni flujo entre componentes. El criterio de selección y el inventario vigente
+de candidatas viven en `docs/unit-test-candidates.md`; ese documento se
+actualiza a mano cuando se agrega o se descarta una función pura.
+
+**Carpeta**: `__tests__/`, colocada dentro de la misma carpeta `lib/` que
+contiene el código que prueba. Nunca un árbol de tests aparte ni espejado fuera
+de `src/`.
+
+```
+src/lib/
+├── money.ts
+└── __tests__/
+    └── money.test.ts
+
+src/modules/audit/lib/
+├── audit-labels.ts
+├── cursor.ts
+└── __tests__/
+    ├── audit-labels.test.ts
+    └── cursor.test.ts
+```
+
+**Reglas duras**
+
+1. `__tests__/` solo existe dentro de una carpeta `lib/` (la única con lógica
+   pura suficiente para justificarla). `components/`, `hooks/`, `services/`,
+   `store/` y `src/server/repositories/` no llevan `__tests__/`: no tienen
+   funciones puras que cubrir con este tipo de prueba.
+2. Un archivo de prueba por archivo fuente, mismo nombre base:
+   `<archivo>.ts` → `__tests__/<archivo>.test.ts`. Varias funciones del mismo
+   archivo comparten un solo `.test.ts`.
+3. Corredor: `tsx --test` (script `test` en §2) — no `node --test` a secas.
+   `tsx` ya es dependencia del proyecto (los scripts `check:*`) y, a diferencia
+   del runner nativo, resuelve el alias `@/*` vía `tsconfig.json`; sigue siendo
+   cero dependencias nuevas. Descubre cualquier `*.test.ts` bajo `__tests__/`
+   sin configuración extra.
+4. Una función solo es candidata a `__tests__/` si su **módulo** carga sin
+   tocar Clerk/Stripe/BD al importarse. `tsx` resuelve el alias, pero no evita
+   que un `import` a nivel de archivo dispare código con efecto (p. ej. `@/server/db`
+   lanza si falta `DATABASE_URL`). Si una función pura comparte archivo con
+   otras que sí importan eso, se extrae a un archivo sin esas dependencias
+   antes de escribirle test — mismo criterio que ya separó `rbac-catalog.ts`
+   (datos puros) de `permissions.ts` (Clerk + repositorios).
+5. Los schemas Zod no llevan `__tests__/` propio: su validación se ejercita a
+   través del Route Handler que los usa, no como unidad aislada.
+
+---
+
+## 8. Checklist de arranque
 
 - [ ] `create-next-app` ejecutado con las flags de la sección 2
 - [ ] Dependencias instaladas
@@ -361,4 +417,5 @@ Acceso admin protegido en dos capas: `proxy.ts` (borde) y verificación por
 - [ ] `ClerkProvider` + `QueryProvider` en `src/app/layout.tsx`
 - [ ] `shadcn init` ejecutado y componentes base agregados
 - [ ] Estructura de carpetas de la sección 3 creada
-- [ ] `npm run typecheck`, `npm run lint` y `npm run build` en verde
+- [ ] `__tests__/` creada junto a cada `lib/` con funciones puras (sección 7)
+- [ ] `npm run typecheck`, `npm run lint`, `npm run build` y `npm run test` en verde

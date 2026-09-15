@@ -1,0 +1,72 @@
+{
+  "pages": [
+    {
+      "id": "landing",
+      "name": "Landing"
+    },
+    {
+      "id": "catalogo",
+      "name": "Catálogo"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "Landing · Desktop",
+      "page": "landing",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 850
+    },
+    {
+      "file": "Mobile.dc.html",
+      "title": "Landing · Mobile",
+      "page": "landing",
+      "x": 1580,
+      "y": 0,
+      "w": 390,
+      "h": 1360
+    },
+    {
+      "file": "Catalog.dc.html",
+      "title": "Catálogo · Desktop",
+      "page": "catalogo",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1340
+    },
+    {
+      "file": "CatalogMobile.dc.html",
+      "title": "Catálogo · Mobile",
+      "page": "catalogo",
+      "x": 1580,
+      "y": 0,
+      "w": 390,
+      "h": 1860
+    }
+  ],
+  "annotations": [
+    {
+      "id": "nota-landing",
+      "page": "landing",
+      "x": 0,
+      "y": -120,
+      "w": 560,
+      "text": "Módulo 1 — Landing. Hero bento: los swatches cambian el color del auricular, el buscador muestra resultados rápidos, Agregar abre el carrito, toggle sol/luna claro ↔ oscuro."
+    },
+    {
+      "id": "nota-catalogo",
+      "page": "catalogo",
+      "x": 0,
+      "y": -120,
+      "w": 560,
+      "text": "Módulo 2 — Catálogo. Buscador + chips de categoría + orden (precio / valoración) filtran la grilla en vivo; Agregar suma al carrito. Mismo sistema visual que la landing. Módulo independiente."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "landing"
+  }
+}

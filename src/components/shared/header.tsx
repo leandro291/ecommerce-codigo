@@ -1,30 +1,44 @@
-import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, Show } from "@clerk/nextjs";
 import Link from "next/link";
 
+import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { UserMenu } from "@/components/shared/user-menu";
 import { Button } from "@/components/ui/button";
+import { CartButton } from "@/modules/cart/components/cart-button";
 
 export function Header() {
   return (
-    <header className="flex items-center justify-between border-b px-6 py-4">
-      <Link href="/" className="text-lg font-semibold">
-        E-commerce Tech
-      </Link>
+    <div className="mx-auto w-full max-w-[1440px] px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8">
+      <header className="flex items-center gap-4 rounded-[20px] border bg-card px-3 py-2 shadow-[var(--shadow-soft)]">
+        <Link
+          href="/"
+          className="px-1.5 font-heading text-lg font-bold tracking-tighter"
+        >
+          TECH<span className="text-brand">.</span>
+        </Link>
 
-      <nav className="flex items-center gap-3">
-        <Show when="signed-out">
-          <SignInButton mode="modal">
-            <Button variant="ghost" size="sm">
-              Iniciar sesión
-            </Button>
-          </SignInButton>
-          <SignUpButton mode="modal">
-            <Button size="sm">Registrarse</Button>
-          </SignUpButton>
-        </Show>
-        <Show when="signed-in">
-          <UserButton />
-        </Show>
-      </nav>
-    </header>
+        <nav className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <Button variant="ghost" size="sm" className="rounded-full">
+                Iniciar sesión
+              </Button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <Button size="sm" className="rounded-full">
+                Registrarse
+              </Button>
+            </SignUpButton>
+          </Show>
+          {/* El `Show` va acá y no adentro del botón: así un anónimo ni siquiera
+              recibe la isla, y `GET /api/cart` no se dispara sin sesión. */}
+          <Show when="signed-in">
+            <CartButton />
+            <UserMenu />
+          </Show>
+        </nav>
+      </header>
+    </div>
   );
 }
