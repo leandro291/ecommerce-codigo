@@ -1,7 +1,7 @@
 ---
 id: 023
 title: Dashboard de métricas del panel admin
-status: in-review
+status: in-progress
 module: dashboard
 scope: admin
 ---
@@ -87,12 +87,12 @@ CENTAVOS) · `revenueByDay { date: "2026-09-16", revenue }[]` ·
 - [x] T10 — Route handler GET: guard, parseo, bordes del rango con `tzOffset`, `Promise.all` de las 5 queries, `averageTicket` derivado (0 si no hay pedidos) y `fillDays` · `src/app/api/admin/metrics/route.ts`
 - [x] T11 — `getMetrics({ range, tzOffset })` con `api.get` y `params` · `src/modules/dashboard/services/metrics.service.ts`
 - [x] T12 — `useMetrics(range)`: `useQuery` con `refetchInterval: 30_000` y `range` + `tzOffset` en la queryKey · `src/modules/dashboard/hooks/use-metrics.ts`
-- [ ] T13 — `npx shadcn@latest add chart` · `src/components/ui/chart.tsx`
-- [ ] T14 — `KpiCards` (4 cards, importes vía `money.ts`) · `src/modules/dashboard/components/kpi-cards.tsx`
-- [ ] T15 — `RevenueChart` (área/línea) con `ChartContainer` · `src/modules/dashboard/components/revenue-chart.tsx`
-- [ ] T16 — `TopProductsChart` (barras) · `src/modules/dashboard/components/top-products-chart.tsx`
-- [ ] T17 — `OrdersStatusChart` (dona) · `src/modules/dashboard/components/orders-status-chart.tsx`
-- [ ] T18 — `MetricsView`: único `"use client"`, `useState` del rango, `Tabs` 7/30/90, skeletons y card de error con "Reintentar" · `src/modules/dashboard/components/metrics-view.tsx`
+- [x] T13 — `npx shadcn@latest add chart` · `src/components/ui/chart.tsx`
+- [x] T14 — `KpiCards` (4 cards, importes vía `money.ts`) · `src/modules/dashboard/components/kpi-cards.tsx`
+- [x] T15 — `RevenueChart` (área/línea) con `ChartContainer` · `src/modules/dashboard/components/revenue-chart.tsx`
+- [x] T16 — `TopProductsChart` (barras) · `src/modules/dashboard/components/top-products-chart.tsx`
+- [x] T17 — `OrdersStatusChart` (dona) · `src/modules/dashboard/components/orders-status-chart.tsx`
+- [x] T18 — `MetricsView`: único `"use client"`, `useState` del rango, `Tabs` 7/30/90, skeletons y card de error con "Reintentar" · `src/modules/dashboard/components/metrics-view.tsx`
 - [ ] T19 — `page.tsx` Server Component: título + `<MetricsView />` · `src/app/(admin)/admin/page.tsx`
 - [ ] T20 — Agregar `{ href: "/admin", label: "Dashboard", permission: "dashboard.read" }` al inicio de `NAV_ITEMS` · `src/app/(admin)/admin/layout.tsx`
 - [ ] T21 — Corregir el activo: `pathname.startsWith(href)` deja `/admin` siempre resaltado; usar match exacto salvo para las subrutas · `src/components/shared/admin-nav.tsx`
