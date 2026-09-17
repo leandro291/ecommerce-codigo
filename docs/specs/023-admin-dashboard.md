@@ -75,15 +75,15 @@ CENTAVOS) · `revenueByDay { date: "2026-09-16", revenue }[]` ·
 - Falta el wrapper de gráficos: `npx shadcn@latest add chart` (Recharts 3.10.1 ya está en `package.json`; prohibido Recharts crudo por §6 del CLAUDE.md).
 
 ## Tareas
-- [ ] T1 — `metricsQuerySchema` (range enum con default, tzOffset opcional) · `src/modules/dashboard/schemas/metrics.schema.ts`
-- [ ] T2 — Tipos `DashboardMetrics`, `MetricsRange` y sus 4 sub-tipos · `src/modules/dashboard/types/metrics.ts`
-- [ ] T3 — `getSalesKpis(range)`: `sum(total_amount)` + `count` sobre `orders` con status IN `PURCHASED` dentro del rango · `src/server/repositories/order.repository.ts`
-- [ ] T4 — `getRevenueByDay(range, tzOffset)`: GROUP BY `date_trunc('day', created_at - make_interval(mins => tzOffset))`, ORDER BY día, sin `generate_series` · `src/server/repositories/order.repository.ts`
-- [ ] T5 — `getTopProducts(range)`: JOIN `order_items` → `orders`, GROUP BY producto, ORDER BY cantidad DESC, LIMIT 5 · `src/server/repositories/order.repository.ts`
-- [ ] T6 — `getOrdersByStatus(range)`: GROUP BY `status` dentro del rango, sin filtrar por status · `src/server/repositories/order.repository.ts`
-- [ ] T7 — `LOW_STOCK_THRESHOLD = 5` y `countLowStock()` (`stock <= threshold AND is_active`) · `src/server/repositories/product.repository.ts`
-- [ ] T8 — `fillDays(from, days, rows)`: función pura que rellena los días sin ventas con `revenue: 0` y devuelve la serie consecutiva y ordenada · `src/modules/dashboard/lib/revenue-series.ts`
-- [ ] T9 — Test de `fillDays`: entra un rango con huecos, salen N puntos consecutivos y ordenados · `src/modules/dashboard/lib/__tests__/revenue-series.test.ts`
+- [x] T1 — `metricsQuerySchema` (range enum con default, tzOffset opcional) · `src/modules/dashboard/schemas/metrics.schema.ts`
+- [x] T2 — Tipos `DashboardMetrics`, `MetricsRange` y sus 4 sub-tipos · `src/modules/dashboard/types/metrics.ts`
+- [x] T3 — `getSalesKpis(range)`: `sum(total_amount)` + `count` sobre `orders` con status IN `PURCHASED` dentro del rango · `src/server/repositories/order.repository.ts`
+- [x] T4 — `getRevenueByDay(range, tzOffset)`: GROUP BY `date_trunc('day', created_at - make_interval(mins => tzOffset))`, ORDER BY día, sin `generate_series` · `src/server/repositories/order.repository.ts`
+- [x] T5 — `getTopProducts(range)`: JOIN `order_items` → `orders`, GROUP BY producto, ORDER BY cantidad DESC, LIMIT 5 · `src/server/repositories/order.repository.ts`
+- [x] T6 — `getOrdersByStatus(range)`: GROUP BY `status` dentro del rango, sin filtrar por status · `src/server/repositories/order.repository.ts`
+- [x] T7 — `LOW_STOCK_THRESHOLD = 5` y `countLowStock()` (`stock <= threshold AND is_active`) · `src/server/repositories/product.repository.ts`
+- [x] T8 — `fillDays(from, days, rows)`: función pura que rellena los días sin ventas con `revenue: 0` y devuelve la serie consecutiva y ordenada · `src/modules/dashboard/lib/revenue-series.ts`
+- [x] T9 — Test de `fillDays`: entra un rango con huecos, salen N puntos consecutivos y ordenados · `src/modules/dashboard/lib/__tests__/revenue-series.test.ts`
 - [ ] T10 — Route handler GET: guard, parseo, bordes del rango con `tzOffset`, `Promise.all` de las 5 queries, `averageTicket` derivado (0 si no hay pedidos) y `fillDays` · `src/app/api/admin/metrics/route.ts`
 - [ ] T11 — `getMetrics({ range, tzOffset })` con `api.get` y `params` · `src/modules/dashboard/services/metrics.service.ts`
 - [ ] T12 — `useMetrics(range)`: `useQuery` con `refetchInterval: 30_000` y `range` + `tzOffset` en la queryKey · `src/modules/dashboard/hooks/use-metrics.ts`

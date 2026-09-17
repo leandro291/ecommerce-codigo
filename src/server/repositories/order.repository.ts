@@ -1,6 +1,12 @@
-import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lt, max, sql, sum } from "drizzle-orm";
 
 import { logAudit } from "@/lib/audit";
+import type {
+  OrdersByStatusPoint,
+  RevenueByDayPoint,
+  SalesKpis,
+  TopProduct,
+} from "@/modules/dashboard/types/metrics";
 import { db } from "@/server/db";
 import {
   cartItems,
@@ -272,4 +278,93 @@ export function markFailed(sessionId: string): Promise<void> {
 
 export function markExpired(sessionId: string): Promise<void> {
   return markFromPending(sessionId, "expired");
+}
+
+// Bordes del rango del dashboard: mismas condiciones opcionales que `listByUser`.
+function rangeConditions(range: OrderRange) {
+  const conditions = [];
+
+  if (range.from) conditions.push(gte(orders.createdAt, range.from));
+  if (range.to) conditions.push(lt(orders.createdAt, range.to));
+
+  return conditions;
+}
+
+// KPIs de ventas del dashboard (spec 023). `averageTicket` y `lowStock` no
+// salen de acá: los arma el handler con este resultado + `countLowStock()`.
+export async function getSalesKpis(
+  range: OrderRange,
+): Promise<Pick<SalesKpis, "revenue" | "orders">> {
+  const [row] = await db
+    .select({ revenue: sum(orders.totalAmount), orders: count() })
+    .from(orders)
+    .where(and(inArray(orders.status, PURCHASED), ...rangeConditions(range)));
+
+  // `sum()` de Postgres es `numeric`: Drizzle lo tipa `string | null`, y un
+  // rango sin ventas da `null`. Sin el cast/fallback el KPI muestra NaN.
+  return { revenue: Number(row?.revenue ?? 0), orders: row?.orders ?? 0 };
+}
+
+// Ingresos por día en la zona local del cliente: el `tzOffset` desplaza el
+// `date_trunc` antes de agrupar, así que el `date` que sale ya es el día
+// calendario del cliente, como texto listo para el gráfico.
+export async function getRevenueByDay(
+  range: OrderRange,
+  tzOffset: number,
+): Promise<RevenueByDayPoint[]> {
+  const localDay = sql`date_trunc('day', ${orders.createdAt} - make_interval(mins => ${tzOffset}))`;
+
+  const rows = await db
+    .select({
+      date: sql<string>`to_char(${localDay}, 'YYYY-MM-DD')`,
+      revenue: sum(orders.totalAmount),
+    })
+    .from(orders)
+    .where(and(inArray(orders.status, PURCHASED), ...rangeConditions(range)))
+    .groupBy(localDay)
+    .orderBy(localDay);
+
+  return rows.map((row) => ({ date: row.date, revenue: Number(row.revenue ?? 0) }));
+}
+
+// Top 5 por cantidad vendida. Agrupa por `product_id` solo (no por `name`): si
+// el nombre snapshot cambió entre dos compras del mismo producto, `max()` da
+// una sola fila igual, no dos.
+export async function getTopProducts(range: OrderRange): Promise<TopProduct[]> {
+  const rows = await db
+    .select({
+      productId: orderItems.productId,
+      name: max(orderItems.name),
+      quantity: sum(orderItems.quantity),
+      revenue: sum(sql`${orderItems.unitPrice} * ${orderItems.quantity}`),
+    })
+    .from(orderItems)
+    .innerJoin(orders, eq(orderItems.orderId, orders.id))
+    .where(and(inArray(orders.status, PURCHASED), ...rangeConditions(range)))
+    .groupBy(orderItems.productId)
+    .orderBy(desc(sum(orderItems.quantity)))
+    .limit(5);
+
+  return rows.map((row) => ({
+    productId: row.productId,
+    // `max(text)` no es nullable en la práctica: el GROUP BY solo produce
+    // filas con al menos un `order_items.name` real.
+    name: row.name ?? "",
+    quantity: Number(row.quantity ?? 0),
+    revenue: Number(row.revenue ?? 0),
+  }));
+}
+
+// Distribución por status del rango: a diferencia de las otras tres, no
+// filtra por `PURCHASED` (el dashboard quiere ver también `pending`/`failed`).
+export async function getOrdersByStatus(
+  range: OrderRange,
+): Promise<OrdersByStatusPoint[]> {
+  const conditions = rangeConditions(range);
+
+  return db
+    .select({ status: orders.status, count: count() })
+    .from(orders)
+    .where(conditions.length ? and(...conditions) : undefined)
+    .groupBy(orders.status);
 }
