@@ -12,9 +12,15 @@ type KpiCardsProps = {
 export function KpiCards({ kpis }: KpiCardsProps) {
   const items = [
     { label: "Ingresos", value: formatPrice(kpis.revenue) },
-    { label: "Pedidos", value: INTEGER_FORMAT.format(kpis.orders) },
+    // "pagados": cuenta solo `paid`/`fulfilled`, mientras que el gráfico de
+    // estados cuenta los cinco. Sin el adjetivo, los dos números no cuadran en
+    // pantalla y parecen un bug.
+    { label: "Pedidos pagados", value: INTEGER_FORMAT.format(kpis.orders) },
     { label: "Ticket promedio", value: formatPrice(kpis.averageTicket) },
-    { label: "Productos con stock bajo", value: INTEGER_FORMAT.format(kpis.lowStock) },
+    // "(actual)": `countLowStock()` no recibe rango, es una foto del presente.
+    // Al cambiar 7d/30d/90d esta card no se mueve, y sin el aclarador parece
+    // congelada.
+    { label: "Stock bajo (actual)", value: INTEGER_FORMAT.format(kpis.lowStock) },
   ];
 
   return (
