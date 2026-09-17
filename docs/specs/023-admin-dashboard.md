@@ -1,7 +1,7 @@
 ---
 id: 023
 title: Dashboard de métricas del panel admin
-status: approved
+status: in-progress
 module: dashboard
 scope: admin
 ---
@@ -84,9 +84,9 @@ CENTAVOS) · `revenueByDay { date: "2026-09-16", revenue }[]` ·
 - [x] T7 — `LOW_STOCK_THRESHOLD = 5` y `countLowStock()` (`stock <= threshold AND is_active`) · `src/server/repositories/product.repository.ts`
 - [x] T8 — `fillDays(from, days, rows)`: función pura que rellena los días sin ventas con `revenue: 0` y devuelve la serie consecutiva y ordenada · `src/modules/dashboard/lib/revenue-series.ts`
 - [x] T9 — Test de `fillDays`: entra un rango con huecos, salen N puntos consecutivos y ordenados · `src/modules/dashboard/lib/__tests__/revenue-series.test.ts`
-- [ ] T10 — Route handler GET: guard, parseo, bordes del rango con `tzOffset`, `Promise.all` de las 5 queries, `averageTicket` derivado (0 si no hay pedidos) y `fillDays` · `src/app/api/admin/metrics/route.ts`
-- [ ] T11 — `getMetrics({ range, tzOffset })` con `api.get` y `params` · `src/modules/dashboard/services/metrics.service.ts`
-- [ ] T12 — `useMetrics(range)`: `useQuery` con `refetchInterval: 30_000` y `range` + `tzOffset` en la queryKey · `src/modules/dashboard/hooks/use-metrics.ts`
+- [x] T10 — Route handler GET: guard, parseo, bordes del rango con `tzOffset`, `Promise.all` de las 5 queries, `averageTicket` derivado (0 si no hay pedidos) y `fillDays` · `src/app/api/admin/metrics/route.ts`
+- [x] T11 — `getMetrics({ range, tzOffset })` con `api.get` y `params` · `src/modules/dashboard/services/metrics.service.ts`
+- [x] T12 — `useMetrics(range)`: `useQuery` con `refetchInterval: 30_000` y `range` + `tzOffset` en la queryKey · `src/modules/dashboard/hooks/use-metrics.ts`
 - [ ] T13 — `npx shadcn@latest add chart` · `src/components/ui/chart.tsx`
 - [ ] T14 — `KpiCards` (4 cards, importes vía `money.ts`) · `src/modules/dashboard/components/kpi-cards.tsx`
 - [ ] T15 — `RevenueChart` (área/línea) con `ChartContainer` · `src/modules/dashboard/components/revenue-chart.tsx`
