@@ -18,23 +18,30 @@ const RANGE_DAYS: Record<MetricsRange, number> = {
   "90d": 90,
 };
 
-// Bordes del rango en la zona local del cliente (spec 020): se cuenta hacia
-// atrás desde el arranque del día local de HOY, borde superior exclusivo.
+// Bordes del rango en la zona local del cliente (spec 020): HOY entra
+// completo (el dashboard es "en vivo", `refetchInterval: 30_000`), así que
+// el borde superior es el arranque del día local de MAÑANA (exclusivo) y
+// se cuenta hacia atrás `days` días desde ahí: "7d" = hoy + los 6 anteriores.
 // `calendarFrom` es un marcador de calendario puro (sin instante real, sin
 // hora) para `fillDays`, que solo hace aritmética UTC sobre día/mes/año
 // (T8): si le pasáramos el instante real, un offset al este de UTC lo
-// corre a la fecha calendario anterior y la serie queda desalineada.
+// corre a la fecha calendario anterior y la serie queda desalineada. Se
+// corre `days - 1` (no `days`) porque el último punto tiene que ser hoy,
+// no ayer.
 function resolveRange(range: MetricsRange, tzOffset: number) {
   const days = RANGE_DAYS[range];
   const todayLocalStr = new Date(Date.now() - tzOffset * 60_000)
     .toISOString()
     .slice(0, 10);
 
-  const to = new Date(Date.parse(`${todayLocalStr}T00:00:00Z`) + tzOffset * 60_000);
+  const startOfTomorrow = new Date(`${todayLocalStr}T00:00:00Z`);
+  startOfTomorrow.setUTCDate(startOfTomorrow.getUTCDate() + 1);
+
+  const to = new Date(startOfTomorrow.getTime() + tzOffset * 60_000);
   const from = new Date(to.getTime() - days * DAY_MS);
 
   const calendarFrom = new Date(`${todayLocalStr}T00:00:00Z`);
-  calendarFrom.setUTCDate(calendarFrom.getUTCDate() - days);
+  calendarFrom.setUTCDate(calendarFrom.getUTCDate() - (days - 1));
 
   return { from, to, days, calendarFrom };
 }
