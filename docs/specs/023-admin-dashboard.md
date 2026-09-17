@@ -1,7 +1,7 @@
 ---
 id: 023
 title: Dashboard de métricas del panel admin
-status: in-progress
+status: in-review
 module: dashboard
 scope: admin
 ---
