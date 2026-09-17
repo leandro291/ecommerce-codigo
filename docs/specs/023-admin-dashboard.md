@@ -1,7 +1,7 @@
 ---
 id: 023
 title: Dashboard de métricas del panel admin
-status: in-progress
+status: in-review
 module: dashboard
 scope: admin
 ---
@@ -29,16 +29,16 @@ No incluye:
 - Zustand: el rango es `useState` de un componente.
 
 ## Criterios de aceptación
-- [ ] AC1 — Dado un admin con `dashboard.read`, cuando entra a `/admin`, entonces ve 4 KPIs (ingresos, pedidos, ticket promedio, productos con stock bajo) del rango activo, con importes formateados desde centavos.
-- [ ] AC2 — Dado el rango por defecto (30d), cuando cambia a 7d o 90d, entonces se refetchea con una queryKey distinta y los tres gráficos se actualizan.
-- [ ] AC3 — Dado un rango con días sin ventas, entonces "Ingresos por día" muestra N puntos consecutivos y ordenados (los huecos valen 0), no solo los días con ventas.
-- [ ] AC4 — Dado un cliente en UTC-5 (`tzOffset=300`), entonces los bordes del rango y el agrupado por día usan su calendario local, no UTC.
-- [ ] AC5 — Dado un request sin `tzOffset`, entonces responde 200 y se comporta como UTC (offset 0), sin romper.
-- [ ] AC6 — Dado `range` fuera de `7d|30d|90d` o `tzOffset` fuera de `[-840, 840]`, entonces 400 con `{ error, issues }` sin tocar la base.
-- [ ] AC7 — Dado un usuario sin `dashboard.read`, entonces `/admin` redirige a `/sin-acceso` (guard del layout) y el endpoint responde 403.
-- [ ] AC8 — Dado que la query está cargando, se ven skeletons; dado que falla, se ve una card de error con botón "Reintentar" que dispara `refetch()`.
-- [ ] AC9 — Dado que el admin está en `/admin/products`, entonces el nav resalta solo "Productos", no también "Dashboard".
-- [ ] AC10 — Dado el árbol de `/admin`, entonces hay un solo `"use client"` y está en `metrics-view.tsx`.
+- [x] AC1 — Dado un admin con `dashboard.read`, cuando entra a `/admin`, entonces ve 4 KPIs (ingresos, pedidos, ticket promedio, productos con stock bajo) del rango activo, con importes formateados desde centavos.
+- [x] AC2 — Dado el rango por defecto (30d), cuando cambia a 7d o 90d, entonces se refetchea con una queryKey distinta y los tres gráficos se actualizan.
+- [x] AC3 — Dado un rango con días sin ventas, entonces "Ingresos por día" muestra N puntos consecutivos y ordenados (los huecos valen 0), no solo los días con ventas.
+- [x] AC4 — Dado un cliente en UTC-5 (`tzOffset=300`), entonces los bordes del rango y el agrupado por día usan su calendario local, no UTC.
+- [x] AC5 — Dado un request sin `tzOffset`, entonces responde 200 y se comporta como UTC (offset 0), sin romper.
+- [x] AC6 — Dado `range` fuera de `7d|30d|90d` o `tzOffset` fuera de `[-840, 840]`, entonces 400 con `{ error, issues }` sin tocar la base.
+- [x] AC7 — Dado un usuario sin `dashboard.read`, entonces `/admin` redirige a `/sin-acceso` (guard del layout) y el endpoint responde 403.
+- [x] AC8 — Dado que la query está cargando, se ven skeletons; dado que falla, se ve una card de error con botón "Reintentar" que dispara `refetch()`.
+- [x] AC9 — Dado que el admin está en `/admin/products`, entonces el nav resalta solo "Productos", no también "Dashboard".
+- [x] AC10 — Dado el árbol de `/admin`, entonces hay un solo `"use client"` y está en `metrics-view.tsx`.
 
 ## Datos
 Sin cambios de esquema. Cero migraciones. Solo lectura sobre `orders`,
@@ -93,9 +93,9 @@ CENTAVOS) · `revenueByDay { date: "2026-09-16", revenue }[]` ·
 - [x] T16 — `TopProductsChart` (barras) · `src/modules/dashboard/components/top-products-chart.tsx`
 - [x] T17 — `OrdersStatusChart` (dona) · `src/modules/dashboard/components/orders-status-chart.tsx`
 - [x] T18 — `MetricsView`: único `"use client"`, `useState` del rango, `Tabs` 7/30/90, skeletons y card de error con "Reintentar" · `src/modules/dashboard/components/metrics-view.tsx`
-- [ ] T19 — `page.tsx` Server Component: título + `<MetricsView />` · `src/app/(admin)/admin/page.tsx`
-- [ ] T20 — Agregar `{ href: "/admin", label: "Dashboard", permission: "dashboard.read" }` al inicio de `NAV_ITEMS` · `src/app/(admin)/admin/layout.tsx`
-- [ ] T21 — Corregir el activo: `pathname.startsWith(href)` deja `/admin` siempre resaltado; usar match exacto salvo para las subrutas · `src/components/shared/admin-nav.tsx`
+- [x] T19 — `page.tsx` Server Component: título + `<MetricsView />` · `src/app/(admin)/admin/page.tsx`
+- [x] T20 — Agregar `{ href: "/admin", label: "Dashboard", permission: "dashboard.read" }` al inicio de `NAV_ITEMS` · `src/app/(admin)/admin/layout.tsx`
+- [x] T21 — Corregir el activo: `pathname.startsWith(href)` deja `/admin` siempre resaltado; usar match exacto salvo para las subrutas · `src/components/shared/admin-nav.tsx`
 
 Verificación final: `npm run typecheck && npm run lint && npm test`
 
