@@ -1,7 +1,7 @@
 ---
 id: 024
 title: Pedidos del panel
-status: in-review
+status: done
 module: orders
 scope: admin
 ---
