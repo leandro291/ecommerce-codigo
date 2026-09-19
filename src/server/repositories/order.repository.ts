@@ -312,17 +312,25 @@ export async function getRevenueByDay(
   range: OrderRange,
   tzOffset: number,
 ): Promise<RevenueByDayPoint[]> {
-  const localDay = sql`date_trunc('day', ${orders.createdAt} - make_interval(mins => ${tzOffset}))`;
+  // `tzOffset` interpolado por Drizzle en select/groupBy/orderBy genera un
+  // bind param ($N) DISTINTO en cada cláusula aunque el valor sea el mismo;
+  // Postgres compara por árbol de expresión, no por valor, y rechaza el
+  // GROUP BY ("column must appear in GROUP BY clause"). Por eso se calcula
+  // una sola vez, aliasado, y las otras cláusulas referencian el alias
+  // (agrupar/ordenar por nombre de columna de salida es SQL estándar).
+  const localDay = sql<string>`to_char(date_trunc('day', ${orders.createdAt} - make_interval(mins => ${tzOffset})), 'YYYY-MM-DD')`.as(
+    "date",
+  );
 
   const rows = await db
     .select({
-      date: sql<string>`to_char(${localDay}, 'YYYY-MM-DD')`,
+      date: localDay,
       revenue: sum(orders.totalAmount),
     })
     .from(orders)
     .where(and(inArray(orders.status, PURCHASED), ...rangeConditions(range)))
-    .groupBy(localDay)
-    .orderBy(localDay);
+    .groupBy(sql`date`)
+    .orderBy(sql`date`);
 
   return rows.map((row) => ({ date: row.date, revenue: Number(row.revenue ?? 0) }));
 }
