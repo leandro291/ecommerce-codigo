@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 
+import { parseCursor } from "@/lib/cursor";
+
 import type { AuditLogRow } from "../types/audit-log";
 import { actionLabel, describeChange } from "./audit-labels";
-import { parseCursor } from "./cursor";
 
 // --- Cursor ----------------------------------------------------------------
 

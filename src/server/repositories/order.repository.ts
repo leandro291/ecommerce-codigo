@@ -1,20 +1,40 @@
-import { and, asc, count, desc, eq, gte, inArray, lt, max, sql, sum } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  lt,
+  max,
+  or,
+  sql,
+  sum,
+  type SQL,
+} from "drizzle-orm";
 
 import { logAudit } from "@/lib/audit";
+import type { KeysetCursor } from "@/lib/cursor";
 import type {
   OrdersByStatusPoint,
   RevenueByDayPoint,
   SalesKpis,
   TopProduct,
 } from "@/modules/dashboard/types/metrics";
+// `import type`: se borra en compilación, no arrastra el módulo cliente al server.
+import type { AdminOrdersPage } from "@/modules/orders/types/order";
 import { db } from "@/server/db";
 import {
   cartItems,
   orderItems,
   orders,
   products,
+  users,
   type Order,
   type OrderItem,
+  type OrderStatus,
 } from "@/server/db/schema";
 
 // Snapshot que entra a `order_items`: el precio ya congelado, no el vivo.
@@ -361,6 +381,88 @@ export async function getTopProducts(range: OrderRange): Promise<TopProduct[]> {
     quantity: Number(row.quantity ?? 0),
     revenue: Number(row.revenue ?? 0),
   }));
+}
+
+export type AdminOrderListParams = OrderRange & {
+  status?: OrderStatus;
+  // Coincidencia parcial contra email, nombre o apellido del cliente.
+  search?: string;
+  limit: number;
+  cursor?: KeysetCursor;
+};
+
+// Listado del panel (024). No filtra por `PURCHASED`: el panel tiene que ver
+// también los `pending`/`failed`/`expired`, a diferencia de `listByUser`.
+export async function listForAdmin(
+  params: AdminOrderListParams,
+): Promise<AdminOrdersPage> {
+  const conditions: SQL[] = rangeConditions(params);
+
+  if (params.status) conditions.push(eq(orders.status, params.status));
+
+  if (params.search) {
+    const pattern = `%${params.search}%`;
+    const match = or(
+      ilike(users.email, pattern),
+      ilike(users.firstName, pattern),
+      ilike(users.lastName, pattern),
+    );
+    if (match) conditions.push(match);
+  }
+
+  // Keyset por comparación de filas de Postgres: estable ante inserciones
+  // concurrentes, a diferencia del OFFSET (mismo criterio que la bitácora, 009).
+  if (params.cursor) {
+    conditions.push(
+      sql`(${orders.createdAt}, ${orders.id}) < (${params.cursor.createdAt.toISOString()}::timestamptz, ${params.cursor.id}::uuid)`,
+    );
+  }
+
+  const rows = await db
+    .select({
+      id: orders.id,
+      userId: orders.userId,
+      status: orders.status,
+      currency: orders.currency,
+      totalAmount: orders.totalAmount,
+      createdAt: orders.createdAt,
+      updatedAt: orders.updatedAt,
+      // Los dos ids de Stripe quedan fuera a propósito: son de la pasarela y
+      // esta vista no los muestra.
+      customerEmail: users.email,
+      customerFirstName: users.firstName,
+      customerLastName: users.lastName,
+    })
+    .from(orders)
+    // INNER y no LEFT: `user_id` es NOT NULL con FK RESTRICT, no hay pedido sin
+    // cliente. Además es el join que habilita el filtro por nombre/email.
+    .innerJoin(users, eq(users.id, orders.userId))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(orders.createdAt), desc(orders.id))
+    // Una fila de más: si vuelve, hay página siguiente y el cursor sale de la
+    // última fila de esta página, no de la sobrante.
+    .limit(params.limit + 1);
+
+  const page = rows.slice(0, params.limit);
+  const last = page.at(-1);
+
+  return {
+    items: page.map(
+      ({ customerEmail, customerFirstName, customerLastName, ...order }) => ({
+        ...order,
+        customer: {
+          id: order.userId,
+          email: customerEmail,
+          firstName: customerFirstName,
+          lastName: customerLastName,
+        },
+      }),
+    ),
+    nextCursor:
+      rows.length > params.limit && last
+        ? `${last.createdAt.toISOString()}|${last.id}`
+        : null,
+  };
 }
 
 // Distribución por status del rango: a diferencia de las otras tres, no

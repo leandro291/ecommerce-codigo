@@ -15,14 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/money";
+import { ORDER_STATUS_LABEL } from "@/lib/order-status";
 import { useReceipt } from "@/modules/orders/hooks/use-orders";
-import type { OrderStatus, OrderWithItems } from "@/modules/orders/types/order";
-
-// Solo se listan compras (`paid`/`fulfilled`); el resto no llega acá.
-const STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
-  paid: "Pago confirmado",
-  fulfilled: "Entregado",
-};
+import type { OrderWithItems } from "@/modules/orders/types/order";
 
 type OrderDetailDialogProps = {
   trigger: ReactElement;
@@ -47,7 +42,7 @@ export function OrderDetailDialog({ trigger, order }: OrderDetailDialogProps) {
         </DialogHeader>
 
         <Badge variant="secondary" className="w-fit">
-          {STATUS_LABEL[order.status] ?? order.status}
+          {ORDER_STATUS_LABEL[order.status]}
         </Badge>
 
         <ul className="flex flex-col gap-3">

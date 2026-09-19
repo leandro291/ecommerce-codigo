@@ -14,6 +14,7 @@ const NAV_ITEMS: readonly (AdminNavItem & { permission: PermissionCode })[] = [
     permission: "categories.read",
   },
   { href: "/admin/products", label: "Productos", permission: "products.read" },
+  { href: "/admin/orders", label: "Pedidos", permission: "orders.read" },
   { href: "/admin/users", label: "Usuarios", permission: "users.read" },
   { href: "/admin/roles", label: "Puestos", permission: "roles.read" },
   {

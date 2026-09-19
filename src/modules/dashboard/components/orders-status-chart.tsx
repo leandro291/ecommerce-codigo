@@ -9,8 +9,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { ORDER_STATUS_LABEL } from "@/lib/order-status";
 import type { OrdersByStatusPoint } from "@/modules/dashboard/types/metrics";
-import type { OrderStatus } from "@/server/db/schema";
 
 // Color por VALENCIA, no por slot categórico: el estado de un pedido no es una
 // identidad arbitraria (qué producto, qué región), tiene significado -
@@ -23,22 +23,30 @@ import type { OrderStatus } from "@/server/db/schema";
 // el validador de dataviz en modo `--pairs all` (todas las combinaciones, no
 // solo vecinas) - ΔE normal-vision ≥ 15.8 y ΔE protan/deutan ≥ 7.9 en ambos
 // modos. Orden fijo: un estado conserva su color entre renders sin importar
-// cuáles estén presentes. Spec 024 (badges de estado en /admin/orders) reusa
-// esta paleta - no redefinirla ahí.
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  pending: "Pendiente",
-  paid: "Pagado",
-  failed: "Fallido",
-  expired: "Expirado",
-  fulfilled: "Entregado",
-};
-
+// cuáles estén presentes. La paleta hex se queda acá (es de Recharts); las
+// etiquetas salen de `@/lib/order-status`, que el badge del panel (024)
+// comparte junto con el criterio de valencia - no redefinirlo ahí.
 const chartConfig = {
-  pending: { label: STATUS_LABEL.pending, theme: { light: "#6a6964", dark: "#7e7a6f" } },
-  paid: { label: STATUS_LABEL.paid, theme: { light: "#7fb57b", dark: "#a6d2a2" } },
-  failed: { label: STATUS_LABEL.failed, theme: { light: "#bb071e", dark: "#de3b3d" } },
-  expired: { label: STATUS_LABEL.expired, theme: { light: "#c27141", dark: "#db956e" } },
-  fulfilled: { label: STATUS_LABEL.fulfilled, theme: { light: "#006300", dark: "#008100" } },
+  pending: {
+    label: ORDER_STATUS_LABEL.pending,
+    theme: { light: "#6a6964", dark: "#7e7a6f" },
+  },
+  paid: {
+    label: ORDER_STATUS_LABEL.paid,
+    theme: { light: "#7fb57b", dark: "#a6d2a2" },
+  },
+  failed: {
+    label: ORDER_STATUS_LABEL.failed,
+    theme: { light: "#bb071e", dark: "#de3b3d" },
+  },
+  expired: {
+    label: ORDER_STATUS_LABEL.expired,
+    theme: { light: "#c27141", dark: "#db956e" },
+  },
+  fulfilled: {
+    label: ORDER_STATUS_LABEL.fulfilled,
+    theme: { light: "#006300", dark: "#008100" },
+  },
 } satisfies ChartConfig;
 
 type OrdersStatusChartProps = {
@@ -50,7 +58,7 @@ type OrdersStatusChartProps = {
 export function OrdersStatusChart({ data }: OrdersStatusChartProps) {
   const total = data.reduce((sum, point) => sum + point.count, 0);
   const summary = data
-    .map((point) => `${STATUS_LABEL[point.status]}: ${point.count}`)
+    .map((point) => `${ORDER_STATUS_LABEL[point.status]}: ${point.count}`)
     .join(", ");
 
   return (
