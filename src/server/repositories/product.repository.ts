@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, lte, or, type SQL } from "drizzle-orm";
 
 import type { PublicProductQuery } from "@/modules/products/schemas/product.schema";
 import { db } from "@/server/db";
@@ -158,4 +158,20 @@ export async function remove(id: string): Promise<Product | undefined> {
     .returning();
 
   return product;
+}
+
+// No hay columna `reorder_point` (eso es el spec 025): el umbral es fijo acá.
+export const LOW_STOCK_THRESHOLD = 5;
+
+// KPI del dashboard (spec 023): solo cuenta productos activos, uno dado de
+// baja con poco stock no es una alerta para nadie.
+export async function countLowStock(): Promise<number> {
+  const [row] = await db
+    .select({ total: count() })
+    .from(products)
+    .where(
+      and(lte(products.stock, LOW_STOCK_THRESHOLD), eq(products.isActive, true)),
+    );
+
+  return row?.total ?? 0;
 }

@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-import { parseCursor } from "@/modules/audit/lib/cursor";
+import { parseCursor } from "@/lib/cursor";
 
 // Mismo dato que el enum `audit_severity` del schema Drizzle, declarado acá para
 // no arrastrar la BD al bundle. Tampoco sale de `@/lib/permissions`, que importa
 // `next/server` y la conexión.
 export const auditSeveritySchema = z.enum(["info", "warning", "error"]);
 
-// El parseo vive en `lib/cursor.ts` (puro, verificable con tsx); acá solo se
+// El parseo vive en `@/lib/cursor` (puro, verificable con tsx); acá solo se
 // convierte su throw en un issue de Zod, que el handler devuelve como 400.
 const cursorSchema = z.string().transform((raw, ctx) => {
   try {

@@ -5,10 +5,10 @@
 // ni DELETE— y no es el lugar para agregarlo.
 import { and, desc, eq, gte, isNull, lt, sql, type SQL } from "drizzle-orm";
 
-// `import type`: se borra en compilación, no arrastra el módulo cliente al server.
 // El cursor —`(created_at, id)` de la última fila devuelta; el `id` desempata
-// dos eventos de la misma transacción— se parsea en `lib/cursor.ts`.
-import type { AuditLogCursor } from "@/modules/audit/lib/cursor";
+// dos eventos de la misma transacción— se parsea en `@/lib/cursor`.
+import type { KeysetCursor } from "@/lib/cursor";
+// `import type`: se borra en compilación, no arrastra el módulo cliente al server.
 import type {
   AuditLogsPage,
   AuditSeverity,
@@ -24,7 +24,7 @@ export type AuditLogListParams = {
   from?: Date; // inclusivo
   to?: Date; // exclusivo: lo calcula el handler sumando un día
   limit: number;
-  cursor?: AuditLogCursor;
+  cursor?: KeysetCursor;
 };
 
 export const SYSTEM_ACTOR_ID = "system";

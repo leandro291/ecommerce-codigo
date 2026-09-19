@@ -1,6 +1,7 @@
-// Cursor de la bitácora: `"<createdAt ISO 8601>|<uuid de la fila>"`, tomado de
-// la última fila devuelta. Texto plano, no base64: es opaco igual para el
-// cliente y ahorra el ida y vuelta de codificación.
+// Cursor keyset compartido: `"<createdAt ISO 8601>|<uuid de la fila>"`, tomado
+// de la última fila devuelta. Texto plano, no base64: es opaco igual para el
+// cliente y ahorra el ida y vuelta de codificación. Lo usan la bitácora (009) y
+// los pedidos del panel (024); vive en `lib/` para que orders no importe audit.
 //
 // Lógica pura y sin zod a propósito: el schema lo envuelve para convertir el
 // throw en un issue (→ 400) y `audit-labels.check.ts` lo corre con tsx.
@@ -10,9 +11,9 @@ const ISO =
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export type AuditLogCursor = { createdAt: Date; id: string };
+export type KeysetCursor = { createdAt: Date; id: string };
 
-export function parseCursor(raw: string): AuditLogCursor {
+export function parseCursor(raw: string): KeysetCursor {
   const [createdAt, id, ...extra] = raw.split("|");
 
   if (extra.length > 0) throw new Error("Cursor inválido: sobran segmentos");

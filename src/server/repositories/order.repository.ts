@@ -1,14 +1,40 @@
-import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  lt,
+  max,
+  or,
+  sql,
+  sum,
+  type SQL,
+} from "drizzle-orm";
 
 import { logAudit } from "@/lib/audit";
+import type { KeysetCursor } from "@/lib/cursor";
+import type {
+  OrdersByStatusPoint,
+  RevenueByDayPoint,
+  SalesKpis,
+  TopProduct,
+} from "@/modules/dashboard/types/metrics";
+// `import type`: se borra en compilación, no arrastra el módulo cliente al server.
+import type { AdminOrdersPage } from "@/modules/orders/types/order";
 import { db } from "@/server/db";
 import {
   cartItems,
   orderItems,
   orders,
   products,
+  users,
   type Order,
   type OrderItem,
+  type OrderStatus,
 } from "@/server/db/schema";
 
 // Snapshot que entra a `order_items`: el precio ya congelado, no el vivo.
@@ -272,4 +298,183 @@ export function markFailed(sessionId: string): Promise<void> {
 
 export function markExpired(sessionId: string): Promise<void> {
   return markFromPending(sessionId, "expired");
+}
+
+// Bordes del rango del dashboard: mismas condiciones opcionales que `listByUser`.
+function rangeConditions(range: OrderRange) {
+  const conditions = [];
+
+  if (range.from) conditions.push(gte(orders.createdAt, range.from));
+  if (range.to) conditions.push(lt(orders.createdAt, range.to));
+
+  return conditions;
+}
+
+// KPIs de ventas del dashboard (spec 023). `averageTicket` y `lowStock` no
+// salen de acá: los arma el handler con este resultado + `countLowStock()`.
+export async function getSalesKpis(
+  range: OrderRange,
+): Promise<Pick<SalesKpis, "revenue" | "orders">> {
+  const [row] = await db
+    .select({ revenue: sum(orders.totalAmount), orders: count() })
+    .from(orders)
+    .where(and(inArray(orders.status, PURCHASED), ...rangeConditions(range)));
+
+  // `sum()` de Postgres es `numeric`: Drizzle lo tipa `string | null`, y un
+  // rango sin ventas da `null`. Sin el cast/fallback el KPI muestra NaN.
+  return { revenue: Number(row?.revenue ?? 0), orders: row?.orders ?? 0 };
+}
+
+// Ingresos por día en la zona local del cliente: el `tzOffset` desplaza el
+// `date_trunc` antes de agrupar, así que el `date` que sale ya es el día
+// calendario del cliente, como texto listo para el gráfico.
+export async function getRevenueByDay(
+  range: OrderRange,
+  tzOffset: number,
+): Promise<RevenueByDayPoint[]> {
+  // `tzOffset` interpolado por Drizzle en select/groupBy/orderBy genera un
+  // bind param ($N) DISTINTO en cada cláusula aunque el valor sea el mismo;
+  // Postgres compara por árbol de expresión, no por valor, y rechaza el
+  // GROUP BY ("column must appear in GROUP BY clause"). Por eso se calcula
+  // una sola vez, aliasado, y las otras cláusulas referencian el alias
+  // (agrupar/ordenar por nombre de columna de salida es SQL estándar).
+  const localDay = sql<string>`to_char(date_trunc('day', ${orders.createdAt} - make_interval(mins => ${tzOffset})), 'YYYY-MM-DD')`.as(
+    "date",
+  );
+
+  const rows = await db
+    .select({
+      date: localDay,
+      revenue: sum(orders.totalAmount),
+    })
+    .from(orders)
+    .where(and(inArray(orders.status, PURCHASED), ...rangeConditions(range)))
+    .groupBy(sql`date`)
+    .orderBy(sql`date`);
+
+  return rows.map((row) => ({ date: row.date, revenue: Number(row.revenue ?? 0) }));
+}
+
+// Top 5 por cantidad vendida. Agrupa por `product_id` solo (no por `name`): si
+// el nombre snapshot cambió entre dos compras del mismo producto, `max()` da
+// una sola fila igual, no dos.
+export async function getTopProducts(range: OrderRange): Promise<TopProduct[]> {
+  const rows = await db
+    .select({
+      productId: orderItems.productId,
+      name: max(orderItems.name),
+      quantity: sum(orderItems.quantity),
+      revenue: sum(sql`${orderItems.unitPrice} * ${orderItems.quantity}`),
+    })
+    .from(orderItems)
+    .innerJoin(orders, eq(orderItems.orderId, orders.id))
+    .where(and(inArray(orders.status, PURCHASED), ...rangeConditions(range)))
+    .groupBy(orderItems.productId)
+    .orderBy(desc(sum(orderItems.quantity)))
+    .limit(5);
+
+  return rows.map((row) => ({
+    productId: row.productId,
+    // `max(text)` no es nullable en la práctica: el GROUP BY solo produce
+    // filas con al menos un `order_items.name` real.
+    name: row.name ?? "",
+    quantity: Number(row.quantity ?? 0),
+    revenue: Number(row.revenue ?? 0),
+  }));
+}
+
+export type AdminOrderListParams = OrderRange & {
+  status?: OrderStatus;
+  // Coincidencia parcial contra email, nombre o apellido del cliente.
+  search?: string;
+  limit: number;
+  cursor?: KeysetCursor;
+};
+
+// Listado del panel (024). No filtra por `PURCHASED`: el panel tiene que ver
+// también los `pending`/`failed`/`expired`, a diferencia de `listByUser`.
+export async function listForAdmin(
+  params: AdminOrderListParams,
+): Promise<AdminOrdersPage> {
+  const conditions: SQL[] = rangeConditions(params);
+
+  if (params.status) conditions.push(eq(orders.status, params.status));
+
+  if (params.search) {
+    const pattern = `%${params.search}%`;
+    const match = or(
+      ilike(users.email, pattern),
+      ilike(users.firstName, pattern),
+      ilike(users.lastName, pattern),
+    );
+    if (match) conditions.push(match);
+  }
+
+  // Keyset por comparación de filas de Postgres: estable ante inserciones
+  // concurrentes, a diferencia del OFFSET (mismo criterio que la bitácora, 009).
+  if (params.cursor) {
+    conditions.push(
+      sql`(${orders.createdAt}, ${orders.id}) < (${params.cursor.createdAt.toISOString()}::timestamptz, ${params.cursor.id}::uuid)`,
+    );
+  }
+
+  const rows = await db
+    .select({
+      id: orders.id,
+      userId: orders.userId,
+      status: orders.status,
+      currency: orders.currency,
+      totalAmount: orders.totalAmount,
+      createdAt: orders.createdAt,
+      updatedAt: orders.updatedAt,
+      // Los dos ids de Stripe quedan fuera a propósito: son de la pasarela y
+      // esta vista no los muestra.
+      customerEmail: users.email,
+      customerFirstName: users.firstName,
+      customerLastName: users.lastName,
+    })
+    .from(orders)
+    // INNER y no LEFT: `user_id` es NOT NULL con FK RESTRICT, no hay pedido sin
+    // cliente. Además es el join que habilita el filtro por nombre/email.
+    .innerJoin(users, eq(users.id, orders.userId))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(orders.createdAt), desc(orders.id))
+    // Una fila de más: si vuelve, hay página siguiente y el cursor sale de la
+    // última fila de esta página, no de la sobrante.
+    .limit(params.limit + 1);
+
+  const page = rows.slice(0, params.limit);
+  const last = page.at(-1);
+
+  return {
+    items: page.map(
+      ({ customerEmail, customerFirstName, customerLastName, ...order }) => ({
+        ...order,
+        customer: {
+          id: order.userId,
+          email: customerEmail,
+          firstName: customerFirstName,
+          lastName: customerLastName,
+        },
+      }),
+    ),
+    nextCursor:
+      rows.length > params.limit && last
+        ? `${last.createdAt.toISOString()}|${last.id}`
+        : null,
+  };
+}
+
+// Distribución por status del rango: a diferencia de las otras tres, no
+// filtra por `PURCHASED` (el dashboard quiere ver también `pending`/`failed`).
+export async function getOrdersByStatus(
+  range: OrderRange,
+): Promise<OrdersByStatusPoint[]> {
+  const conditions = rangeConditions(range);
+
+  return db
+    .select({ status: orders.status, count: count() })
+    .from(orders)
+    .where(conditions.length ? and(...conditions) : undefined)
+    .groupBy(orders.status);
 }

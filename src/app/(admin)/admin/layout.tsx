@@ -7,12 +7,14 @@ import { requirePanelAccess } from "@/lib/auth";
 import { can, type PermissionCode } from "@/lib/permissions";
 
 const NAV_ITEMS: readonly (AdminNavItem & { permission: PermissionCode })[] = [
+  { href: "/admin", label: "Dashboard", permission: "dashboard.read" },
   {
     href: "/admin/categories",
     label: "Categorías",
     permission: "categories.read",
   },
   { href: "/admin/products", label: "Productos", permission: "products.read" },
+  { href: "/admin/orders", label: "Pedidos", permission: "orders.read" },
   { href: "/admin/users", label: "Usuarios", permission: "users.read" },
   { href: "/admin/roles", label: "Puestos", permission: "roles.read" },
   {
