@@ -1,7 +1,23 @@
-import { and, asc, count, desc, eq, ilike, lte, or, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  lte,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 
+import { logAudit } from "@/lib/audit";
+import type { InventoryQuery } from "@/modules/products/schemas/inventory.schema";
 import type { PublicProductQuery } from "@/modules/products/schemas/product.schema";
-import { db } from "@/server/db";
+// `import type`: se borra en compilación, no arrastra el módulo cliente al server.
+import type { InventoryRow } from "@/modules/products/types/product";
+import { db, type Tx } from "@/server/db";
 import {
   categories,
   products,
@@ -22,6 +38,7 @@ const listColumns = {
   compareAtPrice: products.compareAtPrice,
   sku: products.sku,
   stock: products.stock,
+  reorderPoint: products.reorderPoint,
   imageUrl: products.imageUrl,
   isActive: products.isActive,
   isFeatured: products.isFeatured,
@@ -160,8 +177,9 @@ export async function remove(id: string): Promise<Product | undefined> {
   return product;
 }
 
-// No hay columna `reorder_point` (eso es el spec 025): el umbral es fijo acá.
-export const LOW_STOCK_THRESHOLD = 5;
+// "Hay que reponer": comparación entre dos columnas de la misma fila, no contra
+// una constante (spec 025). Se comparte entre el KPI, el filtro y el orden.
+const isLowStock = lte(products.stock, products.reorderPoint);
 
 // KPI del dashboard (spec 023): solo cuenta productos activos, uno dado de
 // baja con poco stock no es una alerta para nadie.
@@ -169,9 +187,156 @@ export async function countLowStock(): Promise<number> {
   const [row] = await db
     .select({ total: count() })
     .from(products)
-    .where(
-      and(lte(products.stock, LOW_STOCK_THRESHOLD), eq(products.isActive, true)),
-    );
+    .where(and(isLowStock, eq(products.isActive, true)));
 
   return row?.total ?? 0;
+}
+
+// --- Inventario (spec 025) -------------------------------------------------
+
+const inventoryColumns = {
+  id: products.id,
+  name: products.name,
+  sku: products.sku,
+  stock: products.stock,
+  reorderPoint: products.reorderPoint,
+  isActive: products.isActive,
+  categoryName: categories.name,
+};
+
+// Sin paginación de servidor: la lista es del tamaño del catálogo y la tabla
+// pagina en cliente. El orden por defecto deja arriba lo que hay que reponer y,
+// dentro de eso, lo más urgente primero (AC2).
+export async function listInventory(
+  filters: InventoryQuery = {},
+): Promise<InventoryRow[]> {
+  const conditions: SQL[] = [];
+
+  if (filters.onlyLow) conditions.push(isLowStock);
+  if (filters.category) {
+    conditions.push(eq(products.categoryId, filters.category));
+  }
+
+  if (filters.search) {
+    const pattern = `%${filters.search}%`;
+    const match = or(ilike(products.name, pattern), ilike(products.sku, pattern));
+    if (match) conditions.push(match);
+  }
+
+  return db
+    .select(inventoryColumns)
+    .from(products)
+    .innerJoin(categories, eq(products.categoryId, categories.id))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(isLowStock), asc(products.stock), asc(products.name));
+}
+
+function findInventoryRow(
+  tx: Tx,
+  id: string,
+): Promise<InventoryRow | undefined> {
+  return tx
+    .select(inventoryColumns)
+    .from(products)
+    .innerJoin(categories, eq(products.categoryId, categories.id))
+    .where(eq(products.id, id))
+    .limit(1)
+    .then((rows) => rows[0]);
+}
+
+export type AdjustStockParams = {
+  id: string;
+  delta?: number;
+  reorderPoint?: number;
+  actorId: string | null;
+};
+
+// `insufficient_stock` y `not_found` los mapea el handler a 409 y 404.
+export type AdjustStockResult =
+  | { ok: true; row: InventoryRow }
+  | { ok: false; reason: "not_found" | "insufficient_stock" };
+
+// Todo en una transacción: el UPDATE y su traza viven o mueren juntos
+// (CLAUDE.md regla 9).
+export async function adjustStock({
+  id,
+  delta,
+  reorderPoint,
+  actorId,
+}: AdjustStockParams): Promise<AdjustStockResult> {
+  return db.transaction(async (tx) => {
+    if (delta !== undefined) {
+      // Delta aplicado en SQL con el no-negativo en el WHERE: leer el stock y
+      // después escribirlo perdería el ajuste de una reposición simultánea.
+      const [updated] = await tx
+        .update(products)
+        .set({ stock: sql`${products.stock} + ${delta}` })
+        .where(
+          and(
+            eq(products.id, id),
+            gte(sql`${products.stock} + ${delta}`, 0),
+          ),
+        )
+        .returning({ stock: products.stock });
+
+      // Cero filas: o no existe el producto o el stock no alcanza. Una lectura
+      // posterior distingue los dos casos.
+      if (!updated) {
+        const current = await findInventoryRow(tx, id);
+
+        return {
+          ok: false,
+          reason: current ? "insufficient_stock" : "not_found",
+        };
+      }
+
+      await logAudit(tx, {
+        actorId,
+        action: "product.stock_adjusted",
+        entityType: "product",
+        entityId: id,
+        // El stock previo sale del resultado, no de un SELECT anterior: el
+        // UPDATE ya devolvió el valor final y el delta es conocido.
+        changes: {
+          before: { stock: updated.stock - delta },
+          after: { stock: updated.stock },
+        },
+        metadata: { delta },
+      });
+    }
+
+    if (reorderPoint !== undefined) {
+      const [before] = await tx
+        .select({ reorderPoint: products.reorderPoint })
+        .from(products)
+        .where(eq(products.id, id))
+        .limit(1);
+
+      if (!before) return { ok: false, reason: "not_found" };
+
+      // Reenviar el mismo valor no es un cambio: sin esto, abrir y guardar el
+      // diálogo ensuciaría la bitácora con trazas de nada.
+      if (before.reorderPoint !== reorderPoint) {
+        await tx
+          .update(products)
+          .set({ reorderPoint })
+          .where(eq(products.id, id));
+
+        await logAudit(tx, {
+          actorId,
+          action: "product.reorder_point_updated",
+          entityType: "product",
+          entityId: id,
+          changes: {
+            before: { reorderPoint: before.reorderPoint },
+            after: { reorderPoint },
+          },
+        });
+      }
+    }
+
+    const row = await findInventoryRow(tx, id);
+
+    return row ? { ok: true, row } : { ok: false, reason: "not_found" };
+  });
 }

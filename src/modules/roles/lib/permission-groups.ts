@@ -6,6 +6,7 @@ import type { Permission } from "@/modules/roles/types/role";
 const RESOURCE_LABELS: Record<string, string> = {
   dashboard: "Panel",
   products: "Productos",
+  inventory: "Inventario",
   categories: "Categorías",
   orders: "Pedidos",
   customers: "Clientes",
@@ -20,6 +21,7 @@ const ACTION_LABELS: Record<string, string> = {
   update: "editar",
   delete: "eliminar",
   update_status: "cambiar estado",
+  adjust: "ajustar",
   deactivate: "desactivar",
   assign_role: "asignar puestos",
   assign_admin: "asignar administradores",

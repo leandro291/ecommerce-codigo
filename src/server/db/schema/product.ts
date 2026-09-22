@@ -29,6 +29,10 @@ export const products = pgTable(
     compareAtPrice: integer("compare_at_price"),
     sku: text("sku"),
     stock: integer("stock").notNull().default(0),
+    // Umbral de reposición por producto. El default 5 es el valor de la vieja
+    // constante `LOW_STOCK_THRESHOLD`: las filas existentes conservan el
+    // comportamiento del KPI del spec 023.
+    reorderPoint: integer("reorder_point").notNull().default(5),
     imageUrl: text("image_url"),
     isActive: boolean("is_active").notNull().default(true),
     isFeatured: boolean("is_featured").notNull().default(false),

@@ -20,7 +20,7 @@ import {
 const catalog = new Set<string>(PERMISSIONS.map((permission) => permission.code));
 
 assert.equal(catalog.size, PERMISSIONS.length, "hay códigos duplicados en el catálogo");
-assert.equal(catalog.size, 22, "el catálogo debe tener 22 permisos");
+assert.equal(catalog.size, 24, "el catálogo debe tener 24 permisos");
 assert.equal(ROLES.length, 6, "deben ser 6 roles");
 
 // Ningún permiso de la matriz puede faltar en el catálogo: el seed resuelve
@@ -32,11 +32,11 @@ for (const role of ROLES) {
 }
 
 const expectedCounts: Record<RoleSlug, number> = {
-  super_admin: 22,
-  admin: 20,
-  manager: 12,
-  employee: 6,
-  audit: 8,
+  super_admin: 24,
+  admin: 22,
+  manager: 14,
+  employee: 7,
+  audit: 9,
   customer: 0,
 };
 
@@ -57,7 +57,7 @@ for (const role of ROLES) {
   matrixRows += codes.length;
 }
 
-assert.equal(matrixRows, 68, "la matriz debe sembrar 68 filas");
+assert.equal(matrixRows, 76, "la matriz debe sembrar 76 filas");
 assert.equal(ROLE_PERMISSIONS.super_admin, "*", "el dueño hereda todo el catálogo");
 
 // "Acceso al panel" = dashboard.read. El cliente no entra.
@@ -74,4 +74,4 @@ assert.ok(
   "solo el dueño edita la matriz de permisos",
 );
 
-console.log("rbac: ok — 22 permisos, 6 roles, 68 filas de matriz");
+console.log("rbac: ok — 24 permisos, 6 roles, 76 filas de matriz");
