@@ -1,7 +1,7 @@
 ---
 id: 005
 title: Sincronización de usuarios con Clerk (webhook + backfill)
-status: in-review
+status: done
 module: auth
 scope: both
 created: 2026-08-31

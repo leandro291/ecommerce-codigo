@@ -1,7 +1,7 @@
 ---
 id: 004
 title: RBAC — Cimientos (esquema, seed y helpers de servidor)
-status: in-review
+status: done
 module: auth
 scope: admin
 created: 2026-08-31

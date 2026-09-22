@@ -1,7 +1,7 @@
 ---
 id: 009
 title: Bitácora de auditoría
-status: in-review
+status: done
 module: auth
 scope: admin
 ---

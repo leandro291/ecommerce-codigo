@@ -43,6 +43,13 @@
       "when": 1789008391330,
       "tag": "0005_cheerful_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790038484140,
+      "tag": "0006_smooth_black_tom",
+      "breakpoints": true
     }
   ]
 }

@@ -19,6 +19,9 @@ export const PERMISSIONS = [
   { code: "products.update", description: "Editar productos" },
   { code: "products.delete", description: "Eliminar productos" },
 
+  { code: "inventory.read", description: "Ver el inventario" },
+  { code: "inventory.adjust", description: "Ajustar stock y punto de reposición" },
+
   { code: "categories.read", description: "Ver categorías" },
   { code: "categories.create", description: "Crear categorías" },
   { code: "categories.update", description: "Editar categorías" },
@@ -109,6 +112,8 @@ export const ROLE_PERMISSIONS: Record<
     "products.create",
     "products.update",
     "products.delete",
+    "inventory.read",
+    "inventory.adjust",
     "categories.read",
     "categories.create",
     "categories.update",
@@ -131,6 +136,8 @@ export const ROLE_PERMISSIONS: Record<
     "products.create",
     "products.update",
     "products.delete",
+    "inventory.read",
+    "inventory.adjust",
     "categories.read",
     "categories.create",
     "categories.update",
@@ -142,6 +149,7 @@ export const ROLE_PERMISSIONS: Record<
   employee: [
     "dashboard.read",
     "products.read",
+    "inventory.read",
     "categories.read",
     "orders.read",
     "orders.update_status",
@@ -150,6 +158,7 @@ export const ROLE_PERMISSIONS: Record<
   audit: [
     "dashboard.read",
     "products.read",
+    "inventory.read",
     "categories.read",
     "orders.read",
     "customers.read",

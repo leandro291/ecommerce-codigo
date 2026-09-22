@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "reorder_point" integer DEFAULT 5 NOT NULL;
