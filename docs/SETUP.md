@@ -1,7 +1,7 @@
 # SETUP — E-commerce Tech
 
 Documento único de referencia para el arranque del proyecto y la **arquitectura de
-carpetas obligatoria**. Todo agente y toda tarea debe respetar esta estructura.
+carpetas obligatoria**. Toda tarea debe respetar esta estructura.
 
 ---
 
@@ -112,11 +112,8 @@ solo enruta y compone; la lógica vive en `modules/` (cliente) y `server/` (dato
 
 ```
 .
-├── .claude/
-│   └── agents/                  orchestrator · spec · developer · reviewer
 ├── docs/
-│   ├── SETUP.md                 este archivo
-│   └── specs/                   NNN-slug.md — specs SDD (documentación viva)
+│   └── SETUP.md                 este archivo
 ├── drizzle/                     migraciones generadas por drizzle-kit
 ├── drizzle.config.ts
 ├── public/
@@ -246,8 +243,7 @@ Client Component ──► hook (TanStack Query) ──► service (axios)
 
 ## 5. Modelo de datos inicial
 
-El detalle exacto de cada tabla lo define su spec. Precios en **enteros
-(centavos)**. Nunca `float`.
+Precios en **enteros (centavos)**. Nunca `float`.
 
 ### 5.1 Identidad y acceso (RBAC)
 

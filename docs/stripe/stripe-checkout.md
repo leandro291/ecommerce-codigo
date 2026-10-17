@@ -1,8 +1,7 @@
 # Integración de pagos — Stripe Checkout
 
 Documento de referencia para incorporar cobros al e-commerce usando **Stripe
-Checkout (hosted)** como primer paso. No es código todavía: es el plan que
-después entra por el `orchestrator` como spec `017-stripe-checkout`.
+Checkout (hosted)** como primer paso. No es código todavía: es el plan de la integración.
 
 - Stack objetivo: Next.js 16 · Route Handlers · Drizzle · Neon · Clerk.
 - API de Stripe: `2026-07-29.dahlia` (la última). SDK Node: `stripe@22.x`.
@@ -398,9 +397,9 @@ Claves:
 ### P10 — Auditoría
 
 `order.created`, `order.paid` y `order.fulfillment_failed` se escriben en
-`audit_logs` **dentro de la misma transacción** que su mutación (regla dura 9 de
-`CLAUDE.md`). Sin datos de tarjeta ni el `payment_intent` completo en el log: el
-`session.id` alcanza para rastrear.
+`audit_logs` **dentro de la misma transacción** que su mutación (ver reglas de
+auditoría en `docs/SETUP.md` §5.2). Sin datos de tarjeta ni el `payment_intent` completo en el
+log: el `session.id` alcanza para rastrear.
 
 ---
 
@@ -434,7 +433,7 @@ nunca `payment_method_types`.
 
 `automatic_tax` queda **apagado**. Encenderlo sin una registración de impuestos
 activa hace que Stripe no cobre nada mientras creés que sí. Si se necesita IGV,
-es otro spec con Stripe Tax + Registrations.
+es otra iteración con Stripe Tax + Registrations.
 
 ---
 
@@ -444,7 +443,7 @@ es otro spec con Stripe Tax + Registrations.
 stripe listen --forward-to localhost:3000/api/webhooks/stripe
 ```
 
-Tarjetas de prueba (`/stripe:test-cards` para la lista completa):
+Tarjetas de prueba (lista completa en https://docs.stripe.com/testing):
 
 | Nº | Resultado |
 |---|---|
@@ -490,11 +489,11 @@ Checklist de prueba manual:
 - [ ] TTL / job que limpia `orders` en `pending` viejas (o se aceptan y se
       revisan a mano al principio).
 - [ ] `npm run typecheck && npm run lint && npm run build` en verde.
-- [ ] Revisión con la skill `security-review` (toca pagos y datos de usuario).
+- [ ] Revisión de seguridad (toca pagos y datos de usuario).
 
 ---
 
-## 10. Fuera de alcance (specs futuros)
+## 10. Fuera de alcance (iteraciones futuras)
 
 | Tema | Cuándo | Nota |
 |---|---|---|
@@ -503,7 +502,7 @@ Checklist de prueba manual:
 | Stripe Tax / IGV | cuando el negocio lo exija | requiere registración activa; `automatic_tax` sin ella no cobra nada |
 | Reserva de stock | si hay sobreventa real | hoy: guard `stock >= qty` en el fulfillment y revisión manual del caso raro |
 | Reembolsos desde el admin | gestión de pedidos | `stripe.refunds.create` + estado `refunded` |
-| Carrito y checkout de invitado | si se pide compra sin cuenta | hoy el checkout exige sesión, igual que el carrito (spec 012) |
+| Carrito y checkout de invitado | si se pide compra sin cuenta | hoy el checkout exige sesión, igual que el carrito |
 
 ---
 
@@ -514,4 +513,3 @@ Checklist de prueba manual:
 - Dynamic payment methods: https://docs.stripe.com/payments/payment-methods/dynamic-payment-methods
 - Verificar webhooks: https://docs.stripe.com/webhooks#verify-events
 - Go-live checklist: https://docs.stripe.com/get-started/checklist/go-live
-- Skills del plugin: `stripe:test-cards`, `stripe:explain-error`, `stripe:stripe-docs`
