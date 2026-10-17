@@ -4,11 +4,6 @@ Tienda de tecnología construida con **Next.js 16**, con un módulo de **cliente
 (storefront, carrito, checkout con Stripe, perfil) y uno de **administración**
 (productos, categorías, usuarios, roles/permisos y auditoría).
 
-El proyecto se desarrolla con IA (Claude Code) bajo una metodología
-**SDD — Spec-Driven Development**: ningún código se escribe sin un spec aprobado
-por una persona, y la IA trabaja siempre contra documentos versionados en este
-repositorio, no contra su memoria.
-
 ---
 
 ## Stack
@@ -41,82 +36,7 @@ npm run dev
 
 ---
 
-## Cómo usamos SDD
-
-Todo pedido pasa por una cadena de agentes definidos en
-[`.claude/agents/`](.claude/agents). Cada agente tiene una sola responsabilidad y
-termina con un handoff explícito; la sesión principal invoca al siguiente.
-
-```
-Pedido
-   │
-   ▼
-┌──────────────┐
-│ orchestrator │  ¿SDD o BUILD?
-└──────┬───────┘
-       │
- ┌─────┴──────────────────────────────────┐
- │                                        │
-SDD                                     BUILD
- │                                        │
- ▼                                        ▼
-spec ──► ⏸ APROBACIÓN HUMANA ──► developer ⇄ reviewer ──► done
-                                    (bucle, máx. 3 vueltas)
-```
-
-| Agente | Responsabilidad | Entregable |
-|---|---|---|
-| **orchestrator** | Clasifica el pedido: SDD (features con datos, dinero, permisos) o BUILD (tareas mecánicas) | Bloque de decisión |
-| **spec** | Entiende el requerimiento y escribe un spec con criterios de aceptación, modelo de datos, contratos de API y tareas atómicas. **Se detiene** | `docs/specs/NNN-slug.md` |
-| **developer** | Ejecuta las tareas del spec aprobado respetando la arquitectura, SOLID y DRY | Código + tareas marcadas |
-| **reviewer** | Audita la implementación contra el spec y la arquitectura; si hay bloqueantes, devuelve al developer | Veredicto + hallazgos |
-
-### Ciclo de vida de un spec
-
-```
-draft ──(aprobación humana)──► approved ──► in-progress ──► in-review ──► done
-                                                 ▲              │
-                                                 └── RECHAZADO ─┘  máx. 3 vueltas
-```
-
-- **Ningún código se escribe sobre un spec en `draft`.** La persona responde
-  `aprobado` (o pide cambios) y recién ahí entra el developer.
-- Si developer ⇄ reviewer no convergen en 3 vueltas, se detiene y se escala a la
-  persona. No se sigue girando.
-- Los specs en [`docs/specs/`](docs/specs) son la documentación viva del
-  proyecto: contexto, decisiones técnicas, contratos y tareas ejecutadas de cada
-  feature. Antes de proponer algo nuevo se revisa si ya existe un spec que lo
-  cubra.
-
----
-
-## La IA y la fuente de verdad
-
-La IA no decide la arquitectura ni recuerda el proyecto: **lee** estos
-documentos en cada sesión y **gana siempre lo que está escrito en el repo**.
-
-| Fuente de verdad | Qué gobierna |
-|---|---|
-| [`CLAUDE.md`](CLAUDE.md) | Contrato de trabajo: flujo SDD, reglas duras, estándares |
-| [`docs/SETUP.md`](docs/SETUP.md) | Estructura de carpetas, stack y flujo de datos. No se improvisan rutas fuera de él |
-| [`docs/specs/`](docs/specs) | Qué se construye y cómo se acepta, feature por feature |
-| [`.claude/agents/`](.claude/agents) | Rol, límites y handoff de cada agente |
-| `node_modules/next/dist/docs/` | Docs de la versión instalada de Next.js 16 (tiene breaking changes respecto al entrenamiento del modelo) |
-
-Reglas de uso de la IA:
-
-1. **Clasificar antes de actuar.** Todo pedido pasa primero por `orchestrator`.
-2. **Humano en la puerta.** La IA propone el spec; una persona lo aprueba.
-3. **Documentación vigente sobre memoria.** Antes de resolver algo del stack, el
-   agente usa las *skills* instaladas (docs actuales de Next.js, Clerk, shadcn,
-   Stripe…). Si una skill contradice `docs/SETUP.md`, gana `docs/SETUP.md`.
-4. **Evidencia antes de declarar hecho.** Ninguna tarea se cierra sin
-   `npm run typecheck && npm run lint && npm run build` (y `npm test`) en verde.
-5. **Las pruebas no se acomodan.** Si un test revela un bug real, no se cambia el
-   valor esperado para que pase: se reporta.
-6. **Errores reales, no silencio.** Nada de `catch {}`, `any` ni `@ts-ignore`.
-
-### Reglas duras de arquitectura (bloqueantes en review)
+## Reglas de arquitectura
 
 ```
 Componente → hook (TanStack Query) → service (axios) → Route Handler
@@ -133,7 +53,7 @@ Componente → hook (TanStack Query) → service (axios) → Route Handler
 8. Rutas de admin protegidas en `proxy.ts` **y** con `requirePermission('<código>')` en el handler. Comparar nombres de rol (`role === 'admin'`) es bloqueante.
 9. `audit_logs` es append-only, se escribe en la misma transacción que la mutación y sin PII sensible ni secretos.
 
-### Estándares de código
+## Estándares de código
 
 - TypeScript estricto; SOLID (un archivo, una responsabilidad).
 - DRY con criterio: se extrae a la tercera repetición.
